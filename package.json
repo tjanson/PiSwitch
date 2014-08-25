@@ -1,6 +1,6 @@
 {
   "name": "piswitch",
-  "version": "1.0.1",
+  "version": "1.0.3",
  "repository": {
     "type": "git",
     "url": "git@github.com:tjanson/PiSwitch.git"
@@ -8,7 +8,7 @@
   "description": "Use your Raspberry Pi to control 433 MHz RC power sockets. Inspired by RC-Switch for Arduino.",
   "main": "piswitch.js",
   "dependencies": {
-    "wiring-pi": "https://github.com/tjanson/wiring-pi.git"
+    "wiring-pi": "https://github.com/tjanson/wiring-pi.git#0f2433"
   },
   "devDependencies": {},
   "scripts": {
