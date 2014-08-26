@@ -8,16 +8,12 @@
  * Adapted for node and Raspberry Pi by tjanson:
  *   https://<github repo here>
  */
-var wpi = require('wiring-pi');
+var wpi    = require('wiring-pi');
+var config = require('./config.js').defaults;
+var tribit = require('./dict.js').tribit;
+var wave   = require('./dict.js').wave;
 
-var config = {
-  pin:          17, // default: BCM numbering, depending on wPi setup()
-  protocol:      1,
-  pulseLength: 350, // in microseconds
-  repeats:      10,
-  mode:     'gpio', // see wiring-pi
-  firstInit:  true
-}
+var firstInit = true;
 
 /*
  * needs to be called once to initialize wiring-pi
@@ -31,9 +27,9 @@ function setup(opts) {
     config[key] = (opts[key] !== undefined) ? opts[key] : config[key];
   }
 
-  if (config.firstInit) {
+  if (firstInit) {
     wpi.setup(config.mode);
-    config.firstInit = false;
+    firstInit = false;
   } else {
     if (oldMode !== config.mode) {
       // not sure if this would lead to problems, so let's just forbid it
@@ -48,41 +44,9 @@ function setup(opts) {
   wpi.pinMode(config.pin, wpi.OUTPUT);
 }
 
-/*
- * wave[protocol][token]:
- *
- * array-tuple of [highs, lows] so that sending HIGH for
- * (highs * pulseLength) followed by LOW for (lows * pulseLength)
- * microsecs corresponds to the given token in a given protocol
- */
-var wave = {
-  '1': {
-    '0': [1, 3],
-    '1': [3, 1],
-    's': [1,31]
-  },
-  '2': {
-    '0': [1, 2],
-    '1': [2, 1],
-    's': [1,10]
-  },
-  '3': {
-    '0': [4,11],
-    '1': [9, 6],
-    's': [1,71]
-  }
-};
-
-// tribit: represents two binary bits
-var tribit = {
-  '0': '00',
-  '1': '11',
-  'f': '01'
-};
-
 // input must be a string, case-insensitive
 // input declared as 'tristate' will be converted to binary
-// any character that's not in the dictionary will be ignored silently
+// any character that's not in the dictionary will be ignored with warning
 function send(code, opts) {
   if (typeof code !== 'string') {
     console.error("ERROR [transmitter.js] send() requires string");
@@ -154,7 +118,7 @@ function flatten(array) {
  * accepts an array of numbers, which represent the delay before
  * switching from HIGH to LOW or vice-versa
  * 
- * e.g.: transmit([1,3,1,1,3]) will produce this waveform: _|^^^|_|^|___
+ * e.g.: transmit([1,3,1,1]) will produce this waveform: ^|___|^|_
  */
 function transmit(wave) {
   level = wpi.HIGH;
