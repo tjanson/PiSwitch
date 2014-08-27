@@ -6,12 +6,11 @@
  *   https://code.google.com/p/rc-switch/
  *
  * Adapted for node and Raspberry Pi by tjanson:
- *   https://<github repo here>
+ *   https://github.com/tjanson/PiSwitch
  */
 var wpi    = require('wiring-pi');
 var config = require('./config.js').defaults;
-var tribit = require('./dict.js').tribit;
-var wave   = require('./dict.js').wave;
+var dict   = require('./dict.js');
 
 var firstInit = true;
 
@@ -44,62 +43,91 @@ function setup(opts) {
   wpi.pinMode(config.pin, wpi.OUTPUT);
 }
 
-// input must be a string, case-insensitive
-// input declared as 'tristate' will be converted to binary
-// any character that's not in the dictionary will be ignored with warning
-function send(code, opts) {
+/*
+ * input must be one of:
+ *   - binary code,
+ *   - tristate,
+ *   - correctly declared manufacturer code
+ */
+function send(code, type, off) {
   if (typeof code !== 'string') {
-    console.error("ERROR [transmitter.js] send() requires string");
+    console.error("ERROR [piswitch.js] send() requires string");
     return;
   }
 
-  code = code.toLowerCase();   // insensitive
-  code = sanitize(code, opts); // strips any chars but 0,1[,f if tricode]
-  code = code.split('');       // use array from now on
-
-  if (opts !== undefined && opts.type === 'tristate') {
-    code = triToBin(code);
+  if (typeof type === 'undefined') { // :)
+    type = 'binary'
   }
 
-  sendBinary(code);
-}
+  if (typeof type !== 'string'
+      || (type !== 'binary' && type !== 'tristate'
+          && typeof dict.types[type] === 'undefined')
+     ) {
+    console.error("ERROR [piswitch.js] unknown code type: " + type);
+  }
 
-function sanitize(code, opts) {
-  var oldCode = code;
-  if (opts !== undefined && opts.type === 'tristate') {
-    code = code.replace(/[^01f]/g, '');
+  code = code.toLowerCase();
+
+  // check against regexp patterns and reject non-matches
+  var pattern;
+  if (type === 'binary') {
+    pattern = /^[01]*$/;
+  } else if (type === 'tristate') {
+    pattern = /^[01f]*$/;
   } else {
-    code = code.replace(/[^01]/g, '');
+    pattern = dict.types[type].regexp;
   }
-  if (oldCode !== code) {
-    console.warn("WARN [transmitter.js] input was unclean, sending anyway");
+  if (!pattern.test(code)) {
+    console.error("ERROR [piswitch.js] bad input (type: " + type + ")");
+    return;
   }
-  return code;
-}
 
-/*
- * prepares transmission, which consists of repeated binCode,
- * plus 'sync' signals before, in-between, and after
- * (not sure if this is exactly spec, but it works for me)
- */
-function sendBinary(binCode) {
+  // translate as necessary
+  if (type === 'tristate') {
+    code = triToBin(code);
+  } else if (type !== 'binary') {
+    code = manufacturerToBin(code, type, off);
+  }
+
+  // transmission consists of repeated binary code
+  // plus 'sync' signals before, in-between, and after
   transmission = ['s'];
   for (var i = 0; i < config.repeats; i++) {
-    transmission = transmission.concat(binCode, 's');
+    transmission = transmission.concat(code, 's');
   }
   transmit(binToWave(transmission));
 }
 
-function triToBin(triCode) {
-  return convert(triCode, function(token){ return tribit[token]; });
+function manufacturerToBin(code, type, off) {
+  var d = dict.types[type];
+  var format = d.format;
+  var tristate = '';
+
+  // the code often consists of several digit groups with
+  // different translation schemes
+  // the character `code[i]` belongs to digit group `format[i]`
+  // and the translation is found in `map[group][char]`
+  for (var i = 0; i < format.length; i++) {
+    tristate += d.map[format[i]][code[i]];
+  }
+
+  tristate += (typeof off !== 'undefined' && off) ? d.off : d.on;
+
+  return triToBin(tristate);
 }
 
-function binToWave(binCode) {
-  return convert(binCode, function(token){ return wave[config.protocol][token]; });
+function triToBin(code) {
+  return convert(code, dict.tribit);
+}
+
+function binToWave(code) {
+  return convert(code, dict.wave[config.protocol]);
 }
 
 function convert(code, mapping) {
-  return flatten(code.map(mapping));
+  return flatten(Array.prototype.map.call(code, function(token){
+    return mapping[token];
+  }));
 }
 
 // flattens one depth
