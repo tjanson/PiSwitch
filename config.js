@@ -3,7 +3,7 @@ var defaultConf = {
   protocol: 1,
   pulseLength: 350, // in microseconds
   repeats: 10,
-  mode: 'gpio'      // use gpio instead of root (see wiring-pi)
+  mode: 'sys'       // use exported pins via sys (see wiring-pi)
 };
 
 exports.defaults = defaultConf;
