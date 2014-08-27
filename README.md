@@ -30,15 +30,18 @@ Attach your 433 MHz transmitter to VCC, GND, and a pin of your liking.
 
 ### Software
 
-* PiSwitch can be used as a non-root user by exporting the GPIO pin using
-  the WiringPi [`gpio`](http://wiringpi.com/the-gpio-utility/) util; see
-  their website for details. The relevant command is `gpio export <pin> out`
-  (BCM numbering). (Also try `gpio readall`: a very handy reference.)
-  If you would rather run as root, pass `mode: 'gpio'` during setup.
+PiSwitch can be used as a non-root user by exporting the GPIO pin using
+the WiringPi [`gpio`](http://wiringpi.com/the-gpio-utility/) util; see
+their website for details. The relevant command is `gpio export <pin> out`
+(BCM numbering). (Also try `gpio readall`: a very handy reference.)
+If you would rather run as root, pass `mode: 'gpio'` during setup.
+
 * `setup()` must be called to initialize WiringPi. You'll probably want to
-  to pass key–value option pairs (e.g., `{ pulseLength: 350, pin: 27 }` that
+  to pass key–value option pairs (e.g., `{ pulseLength: 350, pin: 27 }`) that
   match your setup. See `config.js`.
-* `send(*String* code, *String* type, *bool* off)` where
-     - `code` matches one of the input schemes, e.g., `ff0f00fffff0` or `a3`
-     - `type` is one of {`binary`, `tristate`, `dip`, `rotary`, `intertechno`, `rev`}
-     - `off` is `true` to send an `off` code (if omitted or `false`, an `on` code is sent)
+
+* `send(code, type, off)` where
+     - `code` matches one of the input schemes, e.g., `'ff0f00fffff0'` or `'a3'`
+     - `type` is one of {`'binary'`, `'tristate'`, `'dip'`, `'rotary'`,
+       `'intertechno'`, `'rev'`} (default: `'binary'`)
+     - `off` is `true` to send an `off` code (default: `false`, i.e., switch on)
