@@ -83,7 +83,9 @@ function send(code, type, off) {
   }
 
   // translate as necessary
-  if (type === 'tristate') {
+  if (type === 'binary') {
+    code = code.split('');
+  } else if (type === 'tristate') {
     code = triToBin(code);
   } else if (type !== 'binary') {
     code = manufacturerToBin(code, type, off);
