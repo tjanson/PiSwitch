@@ -8,7 +8,7 @@
   "description": "Use your Raspberry Pi to control 433 MHz RC power sockets. Inspired by RC-Switch for Arduino.",
   "main": "piswitch.js",
   "dependencies": {
-    "wiring-pi": "^1.1.2"
+    "wiring-pi": "^2.0.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
